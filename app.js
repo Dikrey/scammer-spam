@@ -6,7 +6,7 @@ const contrib = require('blessed-contrib');
 
 const urls = fs.readFileSync('urls.txt', 'utf8').trim().split('\n');
 const THREADS = 4;
-
+const TEXT = "ERROR";
 
 const screen = blessed.screen();
 const grid = new contrib.grid({ rows: 12, cols: 12, screen });
@@ -57,7 +57,7 @@ let globalStats = {
 let workers = [];
 
 for (let i = 1; i <= THREADS; i++) {
-  const w = new Worker('./worker.js', { workerData: { id: i, urls } });
+  const w = new Worker('./worker.js', { workerData: { id: i, urls, text: TEXT } });
 
   w.on('message', msg => {
     if (msg.type === 'stats') {

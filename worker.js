@@ -1,6 +1,8 @@
 // worker.js
-const axios = require('axios');
-const { workerData, parentPort } = require('worker_threads');
+const axios = require("axios");
+const { workerData, parentPort } = require("worker_threads");
+
+const text = workerData.text;
 
 const urls = workerData.urls;
 const id = workerData.id;
@@ -13,14 +15,17 @@ let latencySum = 0;
 
 const http = axios.create({
   timeout: 4000,
-  validateStatus: () => true
+  validateStatus: () => true,
 });
 
 async function hit(url) {
   const start = Date.now();
 
   try {
-    const res = await http.get(url + encodeURIComponent("ForensicTestCLI"));
+    // const res = await http.get(url + encodeURIComponent("ERROR"));
+    const res = await http.get(url + encodeURIComponent(text));
+
+
     const ms = Date.now() - start;
 
     latencySum += ms;
@@ -31,25 +36,27 @@ async function hit(url) {
     } else {
       totalErr++;
     }
-
   } catch (err) {
     const ms = Date.now() - start;
     latencySum += ms;
     totalSent++;
 
-    if (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
+    if (
+      err.code === "ECONNREFUSED" ||
+      err.code === "ECONNRESET" ||
+      err.code === "ETIMEDOUT"
+    ) {
       totalDown++;
       parentPort.postMessage({
-        type: 'log',
-        text: `Worker ${id}: API DOWN (${err.code})`
+        type: "log",
+        text: `Worker ${id}: API DOWN (${err.code})`,
       });
-
     } else {
       // FAILED SEND = tidak mencapai server karena mslh jaringan
       totalErr++;
       parentPort.postMessage({
-        type: 'log',
-        text: `Worker ${id}: FAILED SEND (${err.message})`
+        type: "log",
+        text: `Worker ${id}: FAILED SEND (${err.message})`,
       });
     }
   }
@@ -57,18 +64,18 @@ async function hit(url) {
 
 async function loop() {
   while (true) {
-    const promises = urls.map(u => hit(u));
+    const promises = urls.map((u) => hit(u));
     await Promise.allSettled(promises);
 
     parentPort.postMessage({
-      type: 'stats',
+      type: "stats",
       data: {
         sentDelta: urls.length,
         okDelta: totalOK,
         errDelta: totalErr,
         downDelta: totalDown,
-        latencyAvg: totalSent ? latencySum / totalSent : 0
-      }
+        latencyAvg: totalSent ? latencySum / totalSent : 0,
+      },
     });
 
     // reset delta
@@ -78,8 +85,8 @@ async function loop() {
     latencySum = 0;
 
     parentPort.postMessage({
-      type: 'log',
-      text: `Worker ${id}: batch done (${urls.length} req)`
+      type: "log",
+      text: `Worker ${id}: batch done (${urls.length} req)`,
     });
   }
 }

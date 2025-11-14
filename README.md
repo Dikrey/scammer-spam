@@ -76,6 +76,9 @@ Install paket:
 
 ```
 npm install axios chalk cli-progress blessed contrib
+
+npm i axios chalk cli-progress blessed blessed-contrib
+
 ```
 
 Buat `urls.txt` berisi daftar URL target:
